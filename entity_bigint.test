@@ -1,0 +1,39 @@
+<?php
+
+
+class EntityBigIntTest extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Entity bigint',
+      'description' => 'Test the single source of bingints.',
+      'group' => 'Database',
+    );
+  }
+  function setUp() {
+    parent::setUp('entity_bigint');
+  }
+
+  function testEntityBigInt() {
+    $user = $this->drupalCreateUser(array('post comments', 'create article content'));
+    $this->drupalLogin($user);
+    $node = $this->drupalCreateNode();
+    $comment = (object) array (
+      'cid' => 0,
+      'pid' => 0,
+      'nid' => $node->nid,
+      'uid' => $user->uid,
+      'subject' => $this->randomString(),
+      'language' => LANGUAGE_NONE,
+    );
+    comment_save($comment);
+    $term = (object) array(
+      'name' => $this->randomString(),
+      'vocabulary_machine_name' => 'Tag',
+    );
+    taxonomy_term_save($term);
+    $delta = $comment->cid - $node->vid;
+    $this->assertTrue($delta > 0, t('Comment cid is larger than node nid'));
+    $this->assertEqual($comment->cid + $delta, $term->tid, t('Term tid is the next in sequence'));
+  }
+}

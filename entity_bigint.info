@@ -1,0 +1,6 @@
+; $Id$
+name = Entity Bigint
+description = Single bigint serial for entities
+core = 7.x
+files[] = entity_bigint.module
+files[] = entity_bigint.test

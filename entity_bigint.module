@@ -1,0 +1,41 @@
+<?php
+
+function entity_bigint_modules_installed() {
+  $entities_info = entity_get_info();
+  $field = array(
+    'type' => 'int',
+    'size' => 'big',
+    'not null' => TRUE,
+    'default' => 0,
+    'unsigned' => TRUE,
+  );
+  $serials = variable_get('serials', array());
+  $transactional_ddl = Database::getConnection()->supportsTransactionalDDL();
+  $schema = drupal_get_schema();
+  if ($transactional_ddl) {
+    $transaction = db_transaction();
+  }
+  foreach ($entities_info as $entity_info) {
+    $keys = array(
+      array('id', 'base table'),
+      array('revision', 'revision table'),
+    );
+    foreach ($keys as $key) {
+      list($id_field, $table_key) = $key;
+      if (isset($entity_info['entity keys'][$id_field]) && isset($entity_info[$table_key]) && !isset($serials[$entity_info[$table_key]])) {
+        $table = $entity_info[$table_key];
+        $id = $entity_info['entity keys'][$id_field];
+        if ($schema[$table]['fields'][$id]['type'] == 'serial') {
+          db_add_field($table, 'new_bigint_key', $field);
+          db_update($table)->expression('new_bigint_key', $id)->execute();
+          db_drop_field($table, $id);
+          db_change_field($table, 'new_bigint_key', $id, $field);
+          $serials[$table] = $id;
+          variable_set('serials', $serials);
+        }
+      }
+    }
+  }
+}
+
+// TODO write uninstall
